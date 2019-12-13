@@ -1,0 +1,3 @@
+/home/dima/Desktop/Repos/computer-organization/ex2/cmake-build-debug/CMakeFiles/rebuild_cache.dir
+/home/dima/Desktop/Repos/computer-organization/ex2/cmake-build-debug/CMakeFiles/ex2.dir
+/home/dima/Desktop/Repos/computer-organization/ex2/cmake-build-debug/CMakeFiles/edit_cache.dir

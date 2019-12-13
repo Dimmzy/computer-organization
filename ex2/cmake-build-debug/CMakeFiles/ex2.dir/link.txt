@@ -1,0 +1,1 @@
+/usr/bin/cc -g   CMakeFiles/ex2.dir/kefel.c.o CMakeFiles/ex2.dir/test.c.o  -o ex2 
