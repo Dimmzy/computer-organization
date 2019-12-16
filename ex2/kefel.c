@@ -11,12 +11,13 @@ void headers(FILE *file);
 void ret(FILE *file);
 void leaMult(FILE *file, long k, bool flag);
 void leashiftMult(FILE *file, long k, bool flag);
+void shiftCaseB(FILE *file, long n, long m,long k);
 int logbase2(long n);
 long getHighestPower(long k);
 long getLowestPower(long k);
 void shift(FILE* file, long offset);
 
-    int main(int argc, char *argv[]) {
+int main(int argc, char *argv[]) {
   if (argc != 2) {
     printf("Improper arguments number");
     return 1;
@@ -54,6 +55,8 @@ void shift(FILE* file, long offset);
         long m = getLowestPower(k);
         if (m == n)
           shift(fp,n);
+        else  if (n > m + 1)
+            shiftCaseB(fp,n,m,k);
         ret(fp);
       }
   }
@@ -61,9 +64,10 @@ void shift(FILE* file, long offset);
 }
 
 void headers(FILE *file) {
-  fprintf(file, ".section .text\n");
-  fprintf(file, ".globl   kefel\n");
-  fprintf(file, "kefel:  movl\t%%edi,%%eax\n");
+  fprintf(file, ".section\t\t.text\n");
+  fprintf(file, ".globl\t\tkefel\n");
+  fprintf(file,"kefel:\n");
+  fprintf(file,"\t\tmovl\t%%edi,%%eax\n");
 }
 
 void ret(FILE *file) {
@@ -101,6 +105,13 @@ void leashiftMult(FILE *file, long k, bool flag) {
     fprintf(file, "\t\tneg %%eax\n");
 }
 
+void shiftCaseB(FILE *file, long n, long m, long k) {
+    fprintf(file,"\t\tmovl %%edi, %%ebx\n");
+    fprintf(file,"\t\tsal $%ld, %%eax\n", n+1);
+    fprintf(file,"\t\tsal $%ld, %%ebx\n", m);
+    fprintf(file,"\t\tsub %%ebx,%%eax\n");
+}
+
 int logbase2(long n) {
   int result;
   for (result = 0; n > 1; result++, n >>= 1);
@@ -125,3 +136,4 @@ long getLowestPower(long k) {
   }
   return -1;
 }
+
