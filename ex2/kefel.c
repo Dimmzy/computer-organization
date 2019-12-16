@@ -2,9 +2,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
-#define DIV3MOD2 (k / 3 % 2 == 0)
-#define DIV5MOD2 (k / 5 % 2 == 0)
-#define DIV9MOD2 (k / 9 % 2 == 0)
+#include <ctype.h>
+#define DIV3MOD2 isdigit(logbase2(k / 3))
+#define DIV5MOD2 isdigit(logbase2(k / 5))
+#define DIV9MOD2 isdigit(logbase2(k / 3))
 #define INT_SIZE sizeof(int) * 8
 
 void headers(FILE *file);
@@ -12,7 +13,7 @@ void ret(FILE *file);
 void leaMult(FILE *file, long k, bool flag);
 void leashiftMult(FILE *file, long k, bool flag);
 void shiftCaseB(FILE *file, long n, long m,long k);
-int logbase2(long n);
+float logbase2(long n);
 long getHighestPower(long k);
 long getLowestPower(long k);
 void shift(FILE* file, long offset);
@@ -112,8 +113,8 @@ void shiftCaseB(FILE *file, long n, long m, long k) {
     fprintf(file,"\t\tsub %%ebx,%%eax\n");
 }
 
-int logbase2(long n) {
-  int result;
+float logbase2(long n) {
+  float result;
   for (result = 0; n > 1; result++, n >>= 1);
   return result;
 }
