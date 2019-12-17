@@ -3,20 +3,22 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <ctype.h>
-#define DIV3MOD2 isdigit(logbase2(k / 3))
-#define DIV5MOD2 isdigit(logbase2(k / 5))
-#define DIV9MOD2 isdigit(logbase2(k / 3))
+#define DIV3POW2 (k % 3 == 0) && isPowerOfTwo(k / 3)
+#define DIV5POW2 (k % 5 == 0) && isPowerOfTwo(k / 5)
+#define DIV9POW2 (k % 9 == 0) && isPowerOfTwo(k / 9)
 #define INT_SIZE sizeof(int) * 8
 
 void headers(FILE *file);
 void ret(FILE *file);
 void leaMult(FILE *file, long k, bool flag);
 void leashiftMult(FILE *file, long k, bool flag);
-void shiftCaseB(FILE *file, long n, long m,long k);
-float logbase2(long n);
+void shiftCaseA(FILE *file, long n, long m);
+void shiftCaseB(FILE *file, long n, long m);
+void shift(FILE* file, long offset);
 long getHighestPower(long k);
 long getLowestPower(long k);
-void shift(FILE* file, long offset);
+bool isPowerOfTwo(long n);
+int logbase2(long n);
 
 int main(int argc, char *argv[]) {
   if (argc != 2) {
@@ -47,7 +49,7 @@ int main(int argc, char *argv[]) {
       ret(fp);
       break;
     default:
-      if (DIV3MOD2 || DIV5MOD2 || DIV9MOD2) {
+      if (DIV3POW2 || DIV5POW2 || DIV9POW2) {
         leashiftMult(fp, k, k < 0);
         ret(fp);
       }
@@ -55,9 +57,11 @@ int main(int argc, char *argv[]) {
         long n = getHighestPower(k);
         long m = getLowestPower(k);
         if (m == n)
-          shift(fp,n);
+          shift(fp,m);
         else  if (n > m + 1)
-            shiftCaseB(fp,n,m,k);
+            shiftCaseB(fp,n,m);
+        else
+          shiftCaseA(fp,n,m);
         ret(fp);
       }
   }
@@ -91,13 +95,13 @@ void leaMult(FILE *file, long k, bool flag) {
 
 void leashiftMult(FILE *file, long k, bool flag) {
   int shiftby = 0;
-  if (DIV3MOD2) {
+  if (DIV3POW2) {
     shiftby = logbase2(k / 3);
     fprintf(file, "\t\tlea\t\t(%%eax,%%eax,2), %%eax\n");
-  } else if (DIV5MOD2) {
+  } else if (DIV5POW2) {
     shiftby = logbase2(k / 5);
     fprintf(file, "\t\tlea\t\t(%%eax,%%eax,4), %%eax\n");
-  } else if (DIV9MOD2) {
+  } else if (DIV9POW2) {
     shiftby = logbase2(k / 9);
     fprintf(file, "\t\tlea\t\t(%%eax,%%eax,8), %%eax\n");
   }
@@ -106,15 +110,25 @@ void leashiftMult(FILE *file, long k, bool flag) {
     fprintf(file, "\t\tneg %%eax\n");
 }
 
-void shiftCaseB(FILE *file, long n, long m, long k) {
+void shiftCaseA(FILE *file, long n, long m) {
+  long i;
+  fprintf(file,"\t\tmovl $0, %%eax\n");
+  for(i = m; i <=n; i++) { 
+    fprintf(file,"\t\tmovl %%edi, %%ebx\n");
+    fprintf(file,"\t\tsal $%ld, %%ebx\n", i);
+    fprintf(file,"\t\tadd %%ebx, %%eax\n");
+  }
+}
+
+void shiftCaseB(FILE *file, long n, long m) {
     fprintf(file,"\t\tmovl %%edi, %%ebx\n");
     fprintf(file,"\t\tsal $%ld, %%eax\n", n+1);
     fprintf(file,"\t\tsal $%ld, %%ebx\n", m);
     fprintf(file,"\t\tsub %%ebx,%%eax\n");
 }
 
-float logbase2(long n) {
-  float result;
+int logbase2(long n) {
+  int result;
   for (result = 0; n > 1; result++, n >>= 1);
   return result;
 }
@@ -138,3 +152,6 @@ long getLowestPower(long k) {
   return -1;
 }
 
+bool isPowerOfTwo(long n) {
+  return (n & (n - 1)) == 0;
+}
