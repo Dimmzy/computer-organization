@@ -2,30 +2,26 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
-#include <ctype.h>
-#define DIV3POW2 (k % 3 == 0) && isPowerOfTwo(k / 3)
-#define DIV5POW2 (k % 5 == 0) && isPowerOfTwo(k / 5)
-#define DIV9POW2 (k % 9 == 0) && isPowerOfTwo(k / 9)
+#define DIV3POW2 ((k % 3 == 0) && isPowerOfTwo(k / 3))
+#define DIV5POW2 ((k % 5 == 0) && isPowerOfTwo(k / 5))
+#define DIV9POW2 ((k % 9 == 0) && isPowerOfTwo(k / 9))
 #define INT_SIZE sizeof(int) * 8
 
 void headers(FILE *file);
 void ret(FILE *file);
 void leaMult(FILE *file, long k, bool flag);
 void leashiftMult(FILE *file, long k, bool flag);
-void shiftCaseA(FILE *file, long n, long m);
-void shiftCaseB(FILE *file, long n, long m);
-void shift(FILE* file, long offset);
-long getHighestPower(long k);
-long getLowestPower(long k);
+void shift(FILE *file, long offset);
+void pickAFunc(FILE *file, long n, long m, bool firstTime, bool negative, bool special);
+void shiftCaseA(FILE *file, long n, long m, bool firstTime, bool neg);
+void shiftCaseB(FILE *file, long n, long m, bool firstTime, bool neg, bool special);
+void shiftPowTwo(FILE *file, long n, bool neg);
+bool bitCheck(long n, int i);
 bool isPowerOfTwo(long n);
 int logbase2(long n);
 
 int main(int argc, char *argv[]) {
-  if (argc != 2) {
-    printf("Improper arguments number");
-    return 1;
-  }
-  long k = strtol(argv[1],NULL,10);
+  long k = strtol(argv[1], NULL, 10);
   FILE *fp;
   fp = fopen("kefel.s", "w");
   headers(fp);
@@ -52,16 +48,43 @@ int main(int argc, char *argv[]) {
       if (DIV3POW2 || DIV5POW2 || DIV9POW2) {
         leashiftMult(fp, k, k < 0);
         ret(fp);
-      }
-      else {
-        long n = getHighestPower(k);
-        long m = getLowestPower(k);
-        if (m == n)
-          shift(fp,m);
-        else  if (n > m + 1)
-            shiftCaseB(fp,n,m);
-        else
-          shiftCaseA(fp,n,m);
+      } else {
+        long absK = (k < 0) ? -k : k;
+        int i;
+        if (isPowerOfTwo(absK)) {
+          int power = 0;
+          for (i = 0; i < INT_SIZE; i++) {
+            if (bitCheck(absK, i)) {
+              power = i - 1;
+              break;
+            }
+          }
+          shiftPowTwo(fp, power, k < 0);
+          ret(fp);
+          break;
+        }
+        bool firstTime = true;
+        bool firstSet = false;
+        bool special = false;
+        int m = 0;
+        int n = 0;
+        for (i = 0; i < INT_SIZE; i++) {
+          if (bitCheck(absK, i + 1)) {
+            if (!firstSet) {
+              m = i;
+              firstSet = true;
+            }
+            n = i;
+          } else {
+            if (firstSet) {
+              pickAFunc(fp, n, m, firstTime, k < 0,special);
+              if (firstTime && n == m)
+                special = true;
+              firstSet = false;
+              firstTime = false;
+            }
+          }
+        }
         ret(fp);
       }
   }
@@ -71,19 +94,19 @@ int main(int argc, char *argv[]) {
 void headers(FILE *file) {
   fprintf(file, ".section\t\t.text\n");
   fprintf(file, ".globl\t\tkefel\n");
-  fprintf(file,"kefel:\n");
-  fprintf(file,"\t\tmovl\t%%edi,%%eax\n");
+  fprintf(file, "\t\t kefel: ");
 }
 
 void ret(FILE *file) {
   fprintf(file, "\t\tret\n");
 }
 
-void shift(FILE* file, long offset) {
-  fprintf(file,"\t\tsal\t\t$%ld, %%eax\n", offset);
+void shift(FILE *file, long offset) {
+  fprintf(file, "\t\tshl\t\t$%ld, %%eax\n", offset);
 }
 
 void leaMult(FILE *file, long k, bool flag) {
+  fprintf(file, "\t\tmovl\t\t%%edi, %%eax");
   if (flag) {
     k = -k;
     fprintf(file, "\t\tlea\t\t(%%eax,%%eax,%ld), %%eax\n", k - 1);
@@ -94,6 +117,7 @@ void leaMult(FILE *file, long k, bool flag) {
 }
 
 void leashiftMult(FILE *file, long k, bool flag) {
+  fprintf(file, "\t\tmovl\t\t%%edi, %%eax\n");
   int shiftby = 0;
   if (DIV3POW2) {
     shiftby = logbase2(k / 3);
@@ -105,26 +129,97 @@ void leashiftMult(FILE *file, long k, bool flag) {
     shiftby = logbase2(k / 9);
     fprintf(file, "\t\tlea\t\t(%%eax,%%eax,8), %%eax\n");
   }
-  shift(file,shiftby);
+  shift(file, shiftby);
   if (flag)
     fprintf(file, "\t\tneg %%eax\n");
 }
 
-void shiftCaseA(FILE *file, long n, long m) {
+void shiftCaseA(FILE *file, long n, long m, bool firstTime, bool neg) {
   long i;
-  fprintf(file,"\t\tmovl $0, %%eax\n");
-  for(i = m; i <=n; i++) { 
-    fprintf(file,"\t\tmovl %%edi, %%ebx\n");
-    fprintf(file,"\t\tsal $%ld, %%ebx\n", i);
-    fprintf(file,"\t\tadd %%ebx, %%eax\n");
+  if (firstTime) {
+    fprintf(file, "\t\tmovl\t\t%%edi, %%eax\n");
+    if (m == 0 && n == 0)
+      return;
+    else if (m == n) {
+      fprintf(file,"\t\tshl $%ld, %%eax\n", m);
+    } else {
+      for (i = m; i <= n; i++) {
+        fprintf(file, "\t\tmovl %%edi, %%ebx\n");
+        fprintf(file, "\t\tshl $%ld, %%ebx\n", i);
+        if (neg)
+          fprintf(file, "\t\tsubl %%ebx, %%eax\n");
+        else
+          fprintf(file, "\t\taddl %%ebx, %%eax\n");
+      }
+    }
+  }
+  else if (m == n) {
+    fprintf(file, "\t\tmovl %%edi, %%ebx\n");
+    fprintf(file, "\t\tshl $%ld, %%ebx\n", m);
+    if (neg)
+      fprintf(file, "\t\tsubl %%ebx, %%eax\n");
+    else
+      fprintf(file, "\t\taddl %%ebx, %%eax\n");
+  } else {
+    for (i = m; i <= n; i++) {
+      fprintf(file, "\t\tmovl %%edi, %%ebx\n");
+      fprintf(file, "\t\tshl $%ld, %%ebx\n", i);
+      if (neg)
+        fprintf(file, "\t\tsubl %%ebx, %%eax\n");
+      else
+        fprintf(file, "\t\taddl %%ebx, %%eax\n");
+    }
   }
 }
 
-void shiftCaseB(FILE *file, long n, long m) {
-    fprintf(file,"\t\tmovl %%edi, %%ebx\n");
-    fprintf(file,"\t\tsal $%ld, %%eax\n", n+1);
-    fprintf(file,"\t\tsal $%ld, %%ebx\n", m);
-    fprintf(file,"\t\tsub %%ebx,%%eax\n");
+void shiftCaseB(FILE *file, long n, long m, bool firstTime, bool neg, bool special) {
+  if (special) {
+    fprintf(file, "\t\tmovl\t\t%%edi, %%ebx\n");
+    if(!neg) {
+      fprintf(file, "\t\tshl $%ld, %%eax\n", n + 1);
+      fprintf(file, "\t\tshl $%ld, %%ebx\n", m);
+      fprintf(file, "\t\tsubl %%ebx, %%eax\n");
+      fprintf(file, "\t\taddl %%edi, %%eax\n");
+    } else {
+      fprintf(file, "\t\tshl $%ld, %%eax\n", m);
+      fprintf(file, "\t\tshl $%ld, %%ebx\n", n + 1);
+      fprintf(file, "\t\tsubl %%ebx, %%eax\n");
+      fprintf(file, "\t\tsubl %%edi, %%eax\n");
+    }
+    return;
+  }
+  if (firstTime) {
+    fprintf(file, "\t\tmovl\t\t%%edi, %%eax\n");
+    fprintf(file, "\t\tmovl\t\t%%edi, %%ebx\n");
+    if (neg) {
+      fprintf(file, "\t\tshl $%ld, %%ebx\n", n + 1);
+      fprintf(file, "\t\tshl $%ld, %%eax\n", m);
+    } else {
+      fprintf(file, "\t\tshl $%ld, %%ebx\n", m);
+      fprintf(file, "\t\tshl $%ld, %%eax\n", n + 1);
+    }
+    fprintf(file, "\t\tsubl %%ebx, %%eax\n");
+  } else {
+    fprintf(file, "\t\tmovl\t\t%%edi, %%ebx\n");
+    fprintf(file, "\t\tmovl\t\t%%edi, %%ecx\n");
+    fprintf(file, "\t\tshl $%ld, %%ebx\n", n + 1);
+    fprintf(file, "\t\tshl $%ld, %%ecx\n", m);
+    if (neg) {
+      fprintf(file, "\t\tsubl %%ebx, %%ecx\n");
+      fprintf(file, "\t\taddl %%ecx, %%eax\n");
+    } else {
+      fprintf(file, "\t\tsubl %%ecx, %%ebx\n");
+      fprintf(file, "\t\taddl %%ebx, %%eax\n");
+    }
+
+  }
+}
+
+void shiftPowTwo(FILE *file, long n, bool neg) {
+  fprintf(file, "\t\tmovl %%edi, %%eax\n");
+  fprintf(file, "\t\tshl $%ld, %%eax\n", n);
+  if (neg)
+    fprintf(file, "\t\tneg %%eax\n");
 }
 
 int logbase2(long n) {
@@ -133,25 +228,18 @@ int logbase2(long n) {
   return result;
 }
 
-long getHighestPower(long k) {
-  int power = -1;
-  int i;
-  for(i = 0; i < INT_SIZE; i++) {
-    if ((k>>i) & 1)
-    power = i;
-  }
-  return power;
-}
-
-long getLowestPower(long k) {
-  int i;
-  for(i = 0; i < INT_SIZE; i++) {
-    if ((k >> i) & 1)
-      return i;
-  }
-  return -1;
+bool bitCheck(long n, int i) {
+  return (n & (1 << (i - 1)));
 }
 
 bool isPowerOfTwo(long n) {
   return (n & (n - 1)) == 0;
 }
+
+void pickAFunc(FILE *file, long n, long m, bool firstTime, bool negative, bool special) {
+  if (n == m)
+    shiftCaseA(file, n, m, firstTime, negative);
+  else
+    shiftCaseB(file, n, m, firstTime, negative, special);
+}
+
