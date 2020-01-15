@@ -27,6 +27,8 @@ int main() {
   writeCases(readFile, writeFile, max);
   fprintf(writeFile, "\tret\n");
   writeJT(writeFile, switchCases, size, max);
+  fclose(readFile);
+  fclose(writeFile);
   return 0;
 }
 
