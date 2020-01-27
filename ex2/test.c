@@ -1,5 +1,7 @@
 #include <stdio.h>
+
 extern int kefel(int);
+
 int main ()
 {
 	int k, x;

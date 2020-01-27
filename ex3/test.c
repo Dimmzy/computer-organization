@@ -1,4 +1,4 @@
-#include <stdio.h>
+/*#include <stdio.h>
 long switch1(long*,long*,long);
 extern long switch2(long*,long*,long);
 int main ()
@@ -19,3 +19,4 @@ int main ()
 	printf("result = %ld, x = %ld, y = %ld, z = %ld\n", result, x, y, z);
 	return 0;
 }
+*/

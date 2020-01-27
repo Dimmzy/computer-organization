@@ -4,8 +4,8 @@ set(CMAKE_DEPENDS_LANGUAGES
   )
 # The set of files for implicit dependencies of each language:
 set(CMAKE_DEPENDS_CHECK_C
-  "/home/dima/Desktop/Repos/computer-organization/ex2/kefel.c" "/home/dima/Desktop/Repos/computer-organization/ex2/cmake-build-debug/CMakeFiles/ex2.dir/kefel.c.o"
-  "/home/dima/Desktop/Repos/computer-organization/ex2/test.c" "/home/dima/Desktop/Repos/computer-organization/ex2/cmake-build-debug/CMakeFiles/ex2.dir/test.c.o"
+  "/home/dima/Desktop/Repositories/computer-organization/ex2/kefel.c" "/home/dima/Desktop/Repositories/computer-organization/ex2/cmake-build-debug/CMakeFiles/ex2.dir/kefel.c.o"
+  "/home/dima/Desktop/Repositories/computer-organization/ex2/test.c" "/home/dima/Desktop/Repositories/computer-organization/ex2/cmake-build-debug/CMakeFiles/ex2.dir/test.c.o"
   )
 set(CMAKE_C_COMPILER_ID "GNU")
 
